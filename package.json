@@ -1,0 +1,8 @@
+{
+  "name": "otel-js-demos",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "author": "Tilde Inc.",
+  "license": "Apache-2.0"
+}
