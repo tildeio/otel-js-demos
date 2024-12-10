@@ -1,0 +1,22 @@
+{
+  "name": "otel-browser-parcel-demo",
+  "version": "1.0.0",
+  "description": "",
+  "private": true,
+  "author": "Tilde Inc.",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "parcel index.html"
+  },
+  "devDependencies": {
+    "parcel": "^2.13.2"
+  },
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/context-zone": "^1.29.0",
+    "@opentelemetry/instrumentation": "^0.56.0",
+    "@opentelemetry/instrumentation-document-load": "^0.43.0",
+    "@opentelemetry/sdk-trace-base": "^1.29.0",
+    "@opentelemetry/sdk-trace-web": "^1.29.0"
+  }
+}
