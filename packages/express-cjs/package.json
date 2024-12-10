@@ -6,7 +6,7 @@
   "author": "Tilde Inc.",
   "license": "Apache-2.0",
   "scripts": {
-    "start": "ts-node app.ts"
+    "start": "ts-node --require ./instrumentation.ts app.ts"
   },
   "dependencies": {
     "@types/express": "^5.0.0",
@@ -14,5 +14,12 @@
     "express": "^4.21.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
+  },
+  "devDependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.54.0",
+    "@opentelemetry/sdk-metrics": "^1.29.0",
+    "@opentelemetry/sdk-node": "^0.56.0",
+    "@opentelemetry/sdk-trace-node": "^1.29.0"
   }
 }
