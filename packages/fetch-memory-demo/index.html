@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Infinite Stream Demo</title>
+  </head>
+  <body>
+    <div>
+      <strong>
+        Warning: this demo is designed to reproduce an issue that will hog a ton
+        of memory and ultimately crash your browser/tab!<br />It's not harmful
+        per se but you may lose work because of this. Consider that before
+        clicking the "Start" button!
+      </strong>
+    </div>
+    <br />
+    <div id="bytes-fetched"></div>
+    <br />
+    <div>
+      <label>
+        <input type="checkbox" id="make-unused-clone" />
+        Make Unused Response Clone
+      </label>
+      <label>
+        <input type="checkbox" id="close-unused-body" />
+        Close Unused Response Body
+      </label>
+      <br />
+      <button id="button" type="button">Start</button>
+    </div>
+
+    <script type="module">
+      function $(id) {
+        return document.getElementById(id);
+      }
+
+      function handleStart() {
+        const controller = new AbortController();
+        const signal = controller.signal;
+        const makeUnusedClone = $("make-unused-clone").checked;
+        const closeUnusedBody = $("close-unused-body").checked;
+
+        const button = $("button");
+        button.innerText = "Stop";
+        button.addEventListener(
+          "click",
+          () => {
+            controller.abort();
+            button.innerText = "Start";
+            button.addEventListener("click", handleStart, { once: true });
+          },
+          { once: true }
+        );
+
+        stream(signal, makeUnusedClone).catch(console.error);
+      }
+
+      $("button").addEventListener("click", handleStart, { once: true });
+
+      async function stream(signal, makeUnusedClone, closeUnusedBody) {
+        const response = await fetch("/infinite-stream", { signal });
+
+        let unusedClone;
+
+        // This simulates the core issue in the current instrumentation code.
+        // Before reading the body, we are eagerly cloning the response (which
+        // makes sense as it can't be done after the body has been read).
+        //
+        // The intention with this clone is to hold onto it until the body has
+        // been fully read, at which point we close the span, and passes this
+        // "pristine" cloned response object (with a still-readable body) to
+        // the `applyCustomAttributesOnSpan`, in case they wanted to read its
+        // body (or if they don't, then it gets dropped/GC-ed).
+        //
+        // The issue is that this necessarily forces the browser to buffer the
+        // entire response body until it has been fully read. This is perhaps
+        // problematic on its own – for example, if the body is consumed via
+        // `.json()`, the browser may be able to use a streaming JSON parser
+        // and not have to buffer the raw response bytes. However, in the case
+        // of large or infintie response intended to be consumed as a stream,
+        // this is fatal, as pointed out in the issue.
+        //
+        // Now, there is an argument to be made here that instrumenting an
+        // infinite/long-running stream is problematic in and of itself, as it
+        // will result in a trace/span that is held up and causes problems here
+        // and elsewhere, so perhaps they should have opted out. Nevertheless,
+        // this seems to be a pretty surprising and suboptimal behavior, and
+        // the feature was poorly motivated in the first place.
+        if (makeUnusedClone) {
+          unusedClone = response.clone();
+        }
+
+        // This was suggested in the issue, so I added an option for this. At
+        // least in Chrome, this seems to have no effect and still causes the
+        // browser to buffer the response body and eventually crash. In any
+        // case, I think this is moot because the whole reason we have the
+        // extra clone is to preserve the ability to read the body in the
+        // `applyCustomAttributesOnSpan` hook, and by doing this it would have
+        // taken away that capability and we may as well just pass on the
+        // original response object at that point.
+        if (closeUnusedBody) {
+          unusedClone?.body?.getReader().cancel();
+        }
+
+        const reader = response.body.getReader();
+        const bytesFetched = $("bytes-fetched");
+        let mib = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            break;
+          }
+
+          mib += value.length / 1024 / 1024;
+          bytesFetched.innerText = `Fetched: ${mib.toFixed(0)} MiB`;
+        }
+
+        // Once the stream is fully read, unusedClone is released and GC-able,
+        // and so is the underlying buffer for the response body.
+      }
+    </script>
+  </body>
+</html>

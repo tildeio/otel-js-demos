@@ -67,6 +67,24 @@ importers:
         specifier: ^1.29.0
         version: 1.29.0(@opentelemetry/api@1.9.0)
 
+  packages/fetch-memory-demo:
+    dependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.0
+      '@types/node':
+        specifier: ^22.10.1
+        version: 22.10.1
+      express:
+        specifier: ^4.21.2
+        version: 4.21.2
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@swc/core@1.10.1(@swc/helpers@0.5.15))(@types/node@22.10.1)(typescript@5.7.2)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.7.2
+
 packages:
 
   '@babel/code-frame@7.26.2':
